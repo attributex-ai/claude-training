@@ -1,0 +1,8 @@
+{
+  "pythonPath": "/usr/local/bin/python3",
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Darwin",
+  "extraPaths": [
+    "/Users/prashanth/Library/Python/3.13/lib/python/site-packages"
+  ]
+}
