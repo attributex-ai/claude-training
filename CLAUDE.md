@@ -49,6 +49,10 @@ The CLI project requires `ANTHROPIC_API_KEY` and `CLAUDE_MODEL` in its own `.env
 - Keep `execution_count` and cell `outputs` consistent with the rest of the notebook — recent commits explicitly normalize these (see `git log`).
 - `*_complete*` notebooks are reference solutions; do not "improve" them speculatively — they are paired with the matching starter and changes there break the pedagogical contrast.
 
+## GitHub account
+
+This repo lives under the `attributex-ai` GitHub org. Always use the `attributex-ai` gh account for any git/gh operations here — **never** the `xhonorated` account, which lacks push access and will fail with 403. If `gh auth status` shows `xhonorated` as active, switch with `gh auth switch --user attributex-ai` before pushing or running `gh` commands.
+
 ## Document format conversion
 
 When the user asks to convert a document from one format to another (PDF → Markdown, DOCX → HTML, etc.):
