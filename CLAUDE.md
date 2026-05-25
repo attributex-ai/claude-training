@@ -53,6 +53,10 @@ The CLI project requires `ANTHROPIC_API_KEY` and `CLAUDE_MODEL` in its own `.env
 
 This repo lives under the `attributex-ai` GitHub org. Always use the `attributex-ai` gh account for any git/gh operations here — **never** the `xhonorated` account, which lacks push access and will fail with 403. If `gh auth status` shows `xhonorated` as active, switch with `gh auth switch --user attributex-ai` before pushing or running `gh` commands.
 
+## Git workflow
+
+Changes land via PR, not direct pushes to `main`. Create a branch, push with `-u`, and open a PR with `gh pr create` — every merge so far (#1–#4) followed this pattern, and the auto-mode classifier will block a direct push to `main` anyway.
+
 ## Document format conversion
 
 When the user asks to convert a document from one format to another (PDF → Markdown, DOCX → HTML, etc.):
