@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCAF Sample Questions: Developer Productivity with Claude</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f5f7fa;
+  color: #1f2937;
+  margin: 0;
+  padding: 24px;
+  line-height: 1.5;
+}
+.container { max-width: 880px; margin: 0 auto; }
+header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  color: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+}
+header h1 { margin: 0 0 8px 0; font-size: 1.75rem; }
+header p { margin: 4px 0; opacity: 0.95; font-size: 0.95rem; }
+.scenario {
+  background: rgba(255,255,255,0.12);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+}
+.progress-bar {
+  background: #e5e7eb;
+  border-radius: 8px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.progress-fill {
+  background: linear-gradient(90deg, #10b981, #059669);
+  height: 100%;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.progress-text {
+  text-align: center;
+  margin-bottom: 16px;
+  font-weight: 600;
+  color: #4b5563;
+}
+.question-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #e5e7eb;
+}
+.question-number {
+  display: inline-block;
+  background: #3b82f6;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.question-text {
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin-bottom: 18px;
+  color: #111827;
+}
+.question-text code, .choice-text code, .explanation code {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  color: #be185d;
+}
+.choices { list-style: none; padding: 0; margin: 0; }
+.choice {
+  display: flex;
+  align-items: flex-start;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.question-card.answered .choice { cursor: not-allowed; }
+.question-card:not(.answered) .choice:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  transform: translateX(2px);
+}
+.choice-label {
+  background: #d1d5db;
+  color: #1f2937;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin-right: 12px;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+.choice-text { flex: 1; font-size: 0.95rem; }
+.choice.correct { background: #d1fae5; border-color: #10b981; }
+.choice.correct .choice-label { background: #10b981; color: #fff; }
+.choice.incorrect { background: #fee2e2; border-color: #ef4444; }
+.choice.incorrect .choice-label { background: #ef4444; color: #fff; }
+.choice.correct .choice-text::after {
+  content: " \2713";
+  color: #047857;
+  font-weight: 700;
+}
+.choice.incorrect .choice-text::after {
+  content: " \2717";
+  color: #b91c1c;
+  font-weight: 700;
+}
+.explanation {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #78350f;
+  display: none;
+}
+.question-card.answered .explanation { display: block; }
+.explanation p { margin: 0 0 8px 0; }
+.explanation p:last-child { margin-bottom: 0; }
+.explanation-title { font-weight: 700; margin-bottom: 6px; color: #92400e; }
+.summary {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 24px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  display: none;
+}
+.summary.show { display: block; }
+.summary h2 { margin: 0 0 8px 0; color: #1f2937; }
+.score { font-size: 2.5rem; font-weight: 800; color: #3b82f6; margin: 12px 0; }
+.reset-btn {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.15s;
+}
+.reset-btn:hover { background: #2563eb; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>CCAF Sample Questions: Developer Productivity with Claude</h1>
+    <p>20 practice questions in the format of the <em>Claude Certified Architect – Foundations</em> exam guide, all set within the <strong>Developer Productivity with Claude</strong> scenario. <strong>Primary domains:</strong> Tool Design &amp; MCP Integration, Claude Code Configuration &amp; Workflows, Agentic Architecture &amp; Orchestration, Context Management &amp; Reliability. ---</p>
+    <div class="scenario"><strong>Scenario:</strong> An engineering organization deploys Claude Code to help engineers explore unfamiliar codebases, understand legacy systems, generate boilerplate, and automate repetitive tasks. The agent uses the built-in tools (<code>Read</code>, <code>Write</code>, <code>Bash</code>, <code>Grep</code>, <code>Glob</code>) alongside MCP servers (issue trackers, observability, databases). The configuration surface includes project- and user-level <code>CLAUDE.md</code>, <code>.claude/settings.json</code>, custom slash commands in <code>.claude/commands/</code>, custom subagents in <code>.claude/agents/</code>, optional <code>.claude/rules/</code> files with glob-conditional conventions, hooks (<code>PreToolUse</code>, <code>PostToolUse</code>, …), the <code>Explore</code> subagent, and plan mode. Success criteria: shorter time-to-first-useful-edit on unfamiliar code, fewer wrong-tool selections, and high engineer trust in agent-initiated actions.</div>
+  </header>
+  <div class="progress-text" id="progressText">Answered 0 of 20 · Correct: 0</div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="question-card" data-correct="0">
+    <span class="question-number">Question 1</span>
+    <div class="question-text">An engineer asks Claude Code to "find all callers of <code>calculate_tax</code> in this Python monorepo." Claude runs <code>Bash</code> with <code>grep -rn calculate_tax .</code> and receives 1,400 matches that include <code>.venv/</code>, <code>dist/</code>, and compiled migration artifacts. The session burns roughly 12% of its context budget filtering noise before producing a useful answer. Which Claude Code primitive should it have used?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">The built-in <code>Grep</code> tool, which uses ripgrep semantics, honors ignored paths, and returns ranked file matches scoped to source files by default.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">The built-in <code>Glob</code> tool to pattern-match file names containing <code>calculate_tax</code>.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">The built-in <code>Read</code> tool with the repository root as <code>file_path</code>, letting Claude inspect the source itself.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">The same <code>Bash</code> call with <code>--exclude-dir</code> flags for <code>.venv</code>, <code>dist</code>, and other noise sources.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p><code>Grep</code> is Claude Code's purpose-built source-search primitive: ripgrep semantics, ignored-path defaults, and structured ranked output that fits cleanly in context. Options B and C confuse the layer — <code>Glob</code> matches filenames rather than file contents, and <code>Read</code> operates on a single file with no across-tree search. Option D keeps the wrong tool and chases noise sources one at a time, where the right tool already excludes them as a class.</p></div>
+  </div>
+  <div class="question-card" data-correct="2">
+    <span class="question-number">Question 2</span>
+    <div class="question-text">An engineer needs to rename a misspelled identifier <code>recieved_at → received_at</code> across 4 occurrences in 2 files. Claude Code is in plan mode by default. Should they stay in plan mode or switch?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Stay in plan mode — every multi-occurrence rename benefits from an upfront plan, even small ones.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Stay in plan mode and dispatch a subagent to enumerate the occurrences first.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Switch to direct execution — plan mode's confirmation overhead exceeds the value of a plan for a trivial, mechanical rename.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Stay in plan mode and run with <code>--dangerously-skip-permissions</code> so the planning turns are quick.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Plan mode is calibrated to changes where getting the <em>plan</em> wrong carries real cost — multi-file edits, architectural decisions, refactors that interact with other systems. A 4-occurrence rename in 2 files has none of that surface; the plan and the change are the same length. Options A and B keep plan mode and pay the planning tax for no benefit, with B layering on a subagent dispatch that adds context cost without changing what gets edited. Option D toggles a different safety layer (permission prompts) without addressing the mismatch between plan mode and the size of the work.</p></div>
+  </div>
+  <div class="question-card" data-correct="1">
+    <span class="question-number">Question 3</span>
+    <div class="question-text">A team wants a <code>PostToolUse</code> hook on <code>Edit</code> and <code>Write</code> that runs <code>pnpm test --related &lt;file&gt;</code> after every code modification. The hook must apply to every engineer who clones the repo, with no per-engineer setup. Where should it be configured?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Each engineer's <code>~/.claude/settings.json</code> so the hook applies across all their projects.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">The project's <code>.claude/settings.json</code> committed to the repository so the hook ships with the codebase.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">The project's <code>CLAUDE.md</code> under a "Hooks" heading.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">A custom slash command that engineers invoke after edits.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Hooks are defined in <code>settings.json</code>; the project-level <code>.claude/settings.json</code> is the correct scope when the rule must apply uniformly to everyone who clones the repo and be version-controlled. Option A drifts the rule into personal config — new engineers join without it, and the hook also fires on unrelated projects. Option C misplaces the configuration — <code>CLAUDE.md</code> carries instructions to the model, not harness-level hook definitions. Option D shifts responsibility back to the engineer to remember to invoke a command, which is exactly the failure mode a <code>PostToolUse</code> hook removes.</p></div>
+  </div>
+  <div class="question-card" data-correct="3">
+    <span class="question-number">Question 4</span>
+    <div class="question-text">An engineer asks Claude to refactor <code>auth_module.py</code> to use the new <code>SessionService</code> interface. Claude dispatches a subagent for the refactor. The subagent's output renames methods consistently but introduces 14 calls to <code>SessionService.validate(token)</code> — a method that does not exist. The actual method is <code>SessionService.verify(token)</code>. The dispatch log shows the subagent was launched with a 60-word task description naming "the new SessionService" but no file path or interface excerpt. What is the most likely root cause?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">The subagent's underlying model is hallucinating method names; switching to a stronger model will resolve it.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">The subagent ran out of time before it could open the <code>SessionService</code> file.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">The main thread should have used plan mode so the interface would have been read first.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">The subagent's prompt did not include the <code>SessionService</code> interface or a file reference, and subagents only see what their dispatch prompt contains.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Subagents start with a clean context — they only know what the dispatch prompt tells them. With a symbol name but no file path or interface excerpt, the subagent has nothing to read and fills the gap with a plausible-sounding guess. Options A and B blame the wrong layer: a stronger model and more wall-clock time both still need the file reference, because the subagent has no awareness the file exists. Option C miscasts plan mode, which gates execution in the main thread but cannot inject context into a subagent the dispatch prompt omits.</p></div>
+  </div>
+  <div class="question-card" data-correct="0">
+    <span class="question-number">Question 5</span>
+    <div class="question-text">A team needs Claude to query their production Postgres analytics database during incident debugging. Queries are read-only <code>SELECT</code>s across 4–5 tables, run a few times per week. Which approach best balances safety and ergonomics?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Install the official <code>postgres-mcp</code> server scoped to a read-only DB role; Claude calls it with structured query arguments, and write paths are physically unavailable at the database.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Give Claude <code>Bash</code> plus <code>psql</code>; engineers already know the CLI, and prompts can request read-only behavior.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Wrap <code>psql</code> in a Python script and have Claude invoke it through <code>Bash</code>.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Build a <code>/query-pg</code> slash command that templates SQL into a <code>psql</code> invocation.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>A purpose-built MCP server provides two properties the alternatives cannot: a typed tool surface (structured arguments instead of shell strings) and a privilege boundary enforced at the database (a read-only role). Options B, C, and D all run <code>psql</code> through <code>Bash</code> under the hood — the underlying tool retains full database privileges and a shell-string surface, so the safety properties are unchanged; only the ergonomic wrappers differ.</p></div>
+  </div>
+  <div class="question-card" data-correct="1">
+    <span class="question-number">Question 6</span>
+    <div class="question-text">A team wants to prevent Claude Code sessions from executing <code>rm -rf</code> and <code>git push --force</code> under any circumstance, including when the command is wrapped (<code>bash -c "rm -rf ..."</code>) or aliased. The block must be programmatic, not probabilistic. Which mechanism enforces this?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Document the rule in the project's <code>CLAUDE.md</code> so Claude learns to avoid those commands.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Add a <code>PreToolUse</code> hook on the <code>Bash</code> tool that inspects the resolved command string and refuses calls matching the dangerous patterns.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Revoke the <code>Bash</code> tool permission entirely for the project.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Set Claude Code's permission policy to prompt the engineer on every Bash invocation.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>A <code>PreToolUse</code> hook is Claude Code's programmatic safety primitive — it runs before every Bash invocation, sees the resolved command (including wrappers), and can deny outright. Options A and D both live in the probabilistic regime: a <code>CLAUDE.md</code> rule is followed by the model most of the time, and per-invocation prompts depend on the engineer catching the dangerous moment correctly. Option C eliminates the symptom and most of the value; the team needs Bash for legitimate work.</p></div>
+  </div>
+  <div class="question-card" data-correct="3">
+    <span class="question-number">Question 7</span>
+    <div class="question-text">An engineer asks Claude to audit a Django codebase for three independent issues: (1) N+1 query patterns, (2) missing CSRF protection on POST endpoints, (3) unused migration files. Each audit takes ~4 minutes and reads a disjoint slice of the repo. What is the best approach?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Run all three audits in the main thread sequentially so the engineer can review each finding as it lands.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Dispatch three subagents sequentially — one per audit, waiting for each to finish before starting the next.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Run audit 1 in the main thread while dispatching audits 2 and 3 as subagents in parallel.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Dispatch three subagents in parallel by issuing all three <code>Agent</code> tool calls in a single message.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Independent tasks with disjoint file sets and no sequential dependency are the trigger for parallel subagent dispatch — issuing the three <code>Agent</code> tool calls in a single message runs them concurrently and cuts wall-clock time roughly threefold. Options A and B serialize work that has no reason to serialize, multiplying time-to-result. Option C splits the main thread between coordination and execution, forfeiting the isolation that makes subagent dispatch worthwhile and crowding the main thread's context.</p></div>
+  </div>
+  <div class="question-card" data-correct="2">
+    <span class="question-number">Question 8</span>
+    <div class="question-text">A team's <code>/scaffold-crud</code> slash command generates boilerplate Django models, serializers, and viewsets from a one-line description and runs ~1,500 times per week. Inspecting outputs shows 95% of runs produce near-template work with minor variation. A separate <code>/refactor-module</code> command, which restructures existing code, also runs on the same model and produces work the team strongly values. What is the best move?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Switch both commands to Haiku to maximize cost savings; the refactor quality drop is acceptable.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Keep both on Opus — model choice should be uniform across commands for predictability.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Route <code>/scaffold-crud</code> to Haiku for the template-shaped work and keep <code>/refactor-module</code> on Opus for the reasoning-heavy work.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Cache <code>/scaffold-crud</code> outputs by description string so 95% of runs are free.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>The right lever is proportionality: match the model's capability to each task's complexity. Boilerplate scaffolding is template-shaped work Haiku handles cheaply, while refactoring needs Opus-grade reasoning. Options A and B refuse to use the routing lever — A trades real refactor value for marginal scaffold savings, and B pays Opus prices uniformly for work that doesn't need Opus. Option D misreads the input distribution: boilerplate runs share <em>structure</em>, not exact description strings, so a description-keyed cache rarely hits and returns stale scaffolds when it does.</p></div>
+  </div>
+  <div class="question-card" data-correct="0">
+    <span class="question-number">Question 9</span>
+    <div class="question-text">An engineer wants Claude to use the project's <code>User</code> factory at <code>app/factories/user_factory.py</code> whenever code that creates a <code>User</code> is generated — in tests, in seed scripts, in admin commands, anywhere in the codebase. Where should the rule live?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">The project-level <code>CLAUDE.md</code> — persistent rules that must apply on every turn, regardless of which file is being edited, belong here.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">A new <code>/scaffold-test</code> slash command whose prompt template embeds the factory rule.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Each engineer's user-level <code>~/.claude/CLAUDE.md</code> so it follows them across projects.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">A <code>.claude/rules/factory.md</code> file with a glob pattern matching <code>tests/**/*.py</code>.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Project-level <code>CLAUDE.md</code> loads on every turn in the repo and applies regardless of which file is being edited — the right home for a convention that spans tests, seed scripts, admin commands, and any other path that touches <code>User</code>. Option B narrows the rule to a single command and misses every freeform turn that creates a <code>User</code> elsewhere. Option C drifts the convention into personal config; new engineers join without it. Option D is the wrong scope — <code>.claude/rules/</code> with a glob is for path-conditional conventions, and the glob <code>tests/**/*.py</code> misses the seed scripts and admin commands the rule explicitly needs to cover.</p></div>
+  </div>
+  <div class="question-card" data-correct="1">
+    <span class="question-number">Question 10</span>
+    <div class="question-text">An engineer asks Claude to summarize the changes in <code>CHANGELOG.md</code>. Claude's summary covers v1.x and v2.x but does not mention any v3.x release, even though v3.0 shipped months ago. Inspection: <code>CHANGELOG.md</code> is 4,200 lines, newest entries are at the bottom, and Claude's session log shows a single <code>Read</code> call — <code>Read(file_path="CHANGELOG.md")</code> with no <code>offset</code> or <code>limit</code>. What is the most likely root cause?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Claude's model cannot summarize documents of this size; chunk the file and summarize each chunk.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">The <code>Read</code> tool returned only the first ~2,000 lines by default, so the v3.x entries at the bottom were never loaded into context.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Markdown parsing dropped the v3.x section because of a malformed heading.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">The session needs plan mode so the file is fully read before summarization.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p><code>Read</code> has a default line cap (~2,000) and reads from the start of the file unless <code>offset</code> and <code>limit</code> are passed. With a 4,200-line CHANGELOG and newest entries at the bottom, everything past the cutoff — v3.x included — is simply absent from Claude's context. Options A and C misidentify the layer: the model never <em>saw</em> the v3.x lines, so summarization quality and markdown parsing are irrelevant. Option D conflates plan mode (an execution-gating feature) with tool parameters; plan mode does not change how <code>Read</code> defaults.</p></div>
+  </div>
+  <div class="question-card" data-correct="3">
+    <span class="question-number">Question 11</span>
+    <div class="question-text">A team installed 12 MCP servers (Jira, Linear, Slack, GitHub, Sentry, Datadog, Stripe, Vercel, Postgres, S3, Figma, Notion). Engineers report: sessions feel slow at startup, Claude sometimes picks the wrong tool — calling <code>linear_create_issue</code> when an engineer said "log this in Jira" — and context budgets feel tighter than before. What is the best fix?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Switch the team to a model with a larger context window so the tool inventory fits comfortably.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Consolidate the 12 servers into one custom "super-MCP" that dispatches internally.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Add a routing classifier as a preprocessing step that picks the right MCP server before Claude runs.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Scope <code>.mcp.json</code> per project (or per task) so only the 3–4 servers actually needed are enabled.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Every loaded MCP tool consumes context and enlarges the surface Claude must choose from; 12 servers across overlapping domains (Jira and Linear, Sentry and Datadog) makes wrong-tool selection the expected outcome. Scoping <code>.mcp.json</code> per project keeps only the relevant servers active and shrinks the decision space directly. Option A treats the context-pressure symptom but leaves the selection ambiguity untouched. Options B and C over-engineer ahead of the cheapest lever — a super-MCP still loads 12 tools' worth of context behind a wrapper, and a classifier adds a preprocessing layer to fix a problem selective enablement removes.</p></div>
+  </div>
+  <div class="question-card" data-correct="2">
+    <span class="question-number">Question 12</span>
+    <div class="question-text">A team wants Claude to prompt the engineer before running <code>npm install</code> — they do not want to block it (engineers do legitimately add dependencies) but they want a beat of human review to catch accidental installs. What is the right mechanism?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Add <code>npm install</code> to the deny list in <code>~/.claude/settings.json</code>.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Add a <code>PreToolUse</code> hook that blocks <code>npm install</code> and emits a message asking the engineer to run it themselves.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Set the <code>Bash</code> permission policy for <code>npm install*</code> to <strong>ask</strong> in the project's <code>.claude/settings.json</code> so Claude prompts before each invocation.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Add a <code>CLAUDE.md</code> instruction telling Claude to confirm with the engineer before running <code>npm install</code>.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Claude Code's permission system has three states — allow, ask, deny — and "ask" is the state designed for this case: the engineer is prompted to approve each invocation with the exact command visible. Options A and B both implement <em>deny</em> by different mechanisms, which the team explicitly does not want. Option D delegates to model behavior (probabilistic) instead of the harness's enforcement layer; the team needs a guarantee.</p></div>
+  </div>
+  <div class="question-card" data-correct="1">
+    <span class="question-number">Question 13</span>
+    <div class="question-text">Engineers report that Claude "sometimes" forgets to run <code>pnpm test</code> after editing files. Logs across 200 sessions show Claude runs tests in roughly 70% of edit-flows; the remaining 30% commit untested changes. The engineering manager wants a guarantee, not best-effort. What is the most effective first step?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Strengthen the <code>CLAUDE.md</code> instruction from "remember to run tests" to "ALWAYS run tests after every <code>Edit</code> or <code>Write</code>, no exceptions."</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Configure a <code>PostToolUse</code> hook on <code>Edit</code> and <code>Write</code> that runs <code>pnpm test --related &lt;file&gt;</code> automatically and surfaces failures.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Switch to a more capable model so instruction-following improves.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Build a <code>/check</code> slash command engineers must invoke after edits to run the test suite.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>A <code>PostToolUse</code> hook moves test execution from "model behavior" to "harness behavior" — once configured, it fires on every <code>Edit</code>/<code>Write</code> regardless of what the model decides on that turn, converting a 70% probabilistic compliance rate into a 100% deterministic one. Options A and C stay in the probabilistic regime; stronger prompts and stronger models improve compliance but never reach guarantee territory. Option D shifts responsibility back to the engineer to remember <code>/check</code>, which is the same failure mode one layer up.</p></div>
+  </div>
+  <div class="question-card" data-correct="0">
+    <span class="question-number">Question 14</span>
+    <div class="question-text">An engineer is debugging an intermittent production crash. The session has read 32 source files, run 47 Bash commands, and built a working hypothesis. The transcript is approaching the context budget and the engineer expects another 1–2 hours of work. What is the right move?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Compact the session — distill the hypothesis, evidence gathered, and ruled-out branches into a structured summary, then continue with that summary plus only the files still actively under investigation.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Start a fresh session and have the engineer re-explain everything from scratch.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Keep going and hope the context budget holds; compaction risks losing key details.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Ask Claude to "forget" the early turns to free up budget, then continue.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Compaction is designed for exactly this profile — a long investigative session where early raw data has already been distilled into a working hypothesis. A structured summary preserves the <em>conclusions</em> while shedding the transcript that produced them. Option B discards hours of investigative state. Option C ignores the imminent budget exhaustion; once the window fills, reasoning quality degrades and earlier turns fall out anyway. Option D misuses the model — asking Claude to "forget" does not free budget because the tokens are already in the transcript; the harness, not the model, manages the window.</p></div>
+  </div>
+  <div class="question-card" data-correct="2">
+    <span class="question-number">Question 15</span>
+    <div class="question-text">An engineer asks Claude "where is rate limiting implemented in our API?" The codebase is a medium-sized Python service (~40k LOC). The engineer expects this is a 3–5 file question — likely a middleware file and one or two config locations. Should they dispatch the <code>Explore</code> subagent or let the main thread handle it?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Always dispatch <code>Explore</code> for any "where is X" question — that is what the subagent is for.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Dispatch <code>Explore</code> <em>and</em> search in the main thread in parallel to maximize coverage.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Let the main thread handle it — a direct <code>Grep</code> + <code>Read</code> sequence is the right tool for a 3–5 file lookup.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Build a custom <code>/find-impl</code> slash command that wraps the search pattern.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p><code>Explore</code> is built for broad investigations that would otherwise burn many tool calls and bloat the main session's context — typically 3+ queries across multiple naming conventions or directories. A focused "where is rate limiting" lookup is a direct <code>Grep</code> + <code>Read</code> sequence; doing it in the main thread costs little context and returns the answer faster than a subagent dispatch. Option A over-applies the subagent and pays dispatch overhead for work that does not need it. Option B duplicates the same search across two paths. Option D builds a slash command for what is already a one-liner with built-in tools.</p></div>
+  </div>
+  <div class="question-card" data-correct="3">
+    <span class="question-number">Question 16</span>
+    <div class="question-text">An engineer ran <code>/init</code> early in the project to bootstrap a <code>CLAUDE.md</code>. A week later, in a fresh session, they asked: "Can you write me a project overview document covering the major modules?" Claude produced the document — but overwrote the existing <code>CLAUDE.md</code> instead of creating <code>PROJECT_OVERVIEW.md</code>. The <code>Write</code> tool call in the log targeted <code>CLAUDE.md</code>. What is the root cause?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">The <code>Write</code> tool unconditionally overwrites whatever path it is given; the <code>Write</code> tool itself is at fault.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Claude Code lacks a read-only mode for <code>CLAUDE.md</code>; the file needs filesystem-level locking.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">The engineer should have used plan mode so Claude would have surfaced the target path before writing.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">The prompt did not specify a target filename, and Claude chose a plausible-but-wrong path (<code>CLAUDE.md</code>) — the request was ambiguous about <em>where</em> to write.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p><code>Write</code> overwrites when handed the same path because that is its contract — the model chooses the path and is responsible for resolving ambiguity in the user's request. The engineer asked for "a project overview document" without naming a target file, and Claude picked the most semantically adjacent existing path it knew about. Options A and B misplace the fault — <code>Write</code>'s overwrite semantics are deliberate and necessary, and filesystem locking would break legitimate edits to <code>CLAUDE.md</code>. Option C miscasts plan mode, which gates execution but does not change how Claude infers a target filename when none is specified.</p></div>
+  </div>
+  <div class="question-card" data-correct="3">
+    <span class="question-number">Question 17</span>
+    <div class="question-text">A team agrees that read-only <code>gh</code> commands (<code>gh pr view</code>, <code>gh issue view</code>, <code>gh pr list</code>) should be auto-allowed in their Claude Code sessions. The allow-list should apply to everyone who clones the repo and survive engineer onboarding. Where should the permission live?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Each engineer's user-level <code>~/.claude/settings.json</code> so the rule applies across all their projects.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Each engineer's project-local <code>.claude/settings.local.json</code> so they can tune it independently.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">The shell profile (<code>.zshrc</code>) so the commands are aliased and pre-approved.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">The project's committed <code>.claude/settings.json</code> — the rule is shared, scoped to this repo, and tracked in version control.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Committed <code>.claude/settings.json</code> is the right home for repo-shared permissions: it ships with the codebase, applies uniformly to everyone who clones the repo, and changes are visible in pull requests. Option A drifts the rule into personal config — new engineers join without it, and the permission leaks to unrelated projects. Option B duplicates configuration work across the team and invites drift. Option C operates at the wrong layer — shell aliases do not affect Claude Code's permission system, which evaluates the tool call before invoking the shell.</p></div>
+  </div>
+  <div class="question-card" data-correct="0">
+    <span class="question-number">Question 18</span>
+    <div class="question-text">A repetitive task: an engineer runs the same review on every PR — <code>gh pr view &lt;PR#&gt;</code>, read the changed files, run <code>pnpm test --related &lt;changed-files&gt;</code>, and post a structured review comment. They want a one-keystroke workflow that takes a PR number as input. What is the right Claude Code primitive?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">A custom slash command (<code>/review-pr &lt;PR#&gt;</code>) in <code>.claude/commands/</code> whose prompt template captures the workflow and takes the PR number as an argument.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">A new MCP server that exposes a <code>review_pr</code> tool.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">A <code>PostToolUse</code> hook on <code>Bash</code> that triggers the review whenever <code>gh pr view</code> is called.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">A custom subagent dispatched via the <code>Agent</code> tool, with the PR number passed in the prompt.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Slash commands are the right primitive for repeatable, parameterized prompt templates: they live in <code>.claude/commands/</code>, accept arguments, and capture a workflow as a reusable invocation. Option B builds infrastructure (a new MCP server) for what is a prompt-template problem, paying server-development cost for no functional gain. Option C misuses hooks, which fire on tool events rather than user invocation, and would trigger on every incidental <code>gh pr view</code>. Option D forces the engineer to assemble the dispatch prompt manually each time and forfeits the slash command's argument-passing.</p></div>
+  </div>
+  <div class="question-card" data-correct="1">
+    <span class="question-number">Question 19</span>
+    <div class="question-text">A custom MCP tool <code>query_logs</code> returns application logs and is correctly wired into Claude Code, but Claude rarely calls it — even when an engineer pastes a stack trace and asks "what was happening in prod around 14:30?" The current tool description is: <em>"Fetches application logs."</em> What is the most effective fix?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Force the tool to be called by setting <code>tool_choice: "any"</code> for the session.</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Rewrite the description with explicit triggers, arguments, and return shape — e.g., <em>"Use when investigating errors, crashes, 5xx responses, or unexpected production behavior. Arguments: <code>service</code> (string), <code>time_range</code> (ISO interval), <code>severity</code> (debug|info|warn|error). Returns timestamped log lines with severity and message."</em></span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Rename the tool from <code>query_logs</code> to <code>logs_tool</code> so it surfaces alphabetically.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Increase the tool's priority in <code>.mcp.json</code> so Claude considers it first.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Tool selection is driven primarily by the description: Claude reads it like any other prompt content and decides relevance from the language. <em>"Fetches application logs"</em> lacks triggers, argument hints, and return-shape signal, so it does not surface against a stack-trace-with-timestamp prompt. Option A forces <em>some</em> tool call rather than the right one, and would also force a tool call when none is appropriate. Options C and D over-credit positional and priority mechanics that do not meaningfully drive selection — the model picks tools by reading their descriptions, not by sort order or a non-existent priority field.</p></div>
+  </div>
+  <div class="question-card" data-correct="2">
+    <span class="question-number">Question 20</span>
+    <div class="question-text">A junior engineer reports a frustrating pattern: Claude Code in plan mode spends 3–4 turns asking clarifying questions ("Should I rename the variable in tests too?", "Do you want a comment?") before doing any work — even for trivial fixes like a typo in a comment or a one-line variable rename. They want to keep plan mode for big changes. What is the right adjustment?</div>
+    <ul class="choices">
+      <li class="choice" data-idx="0"><span class="choice-label">A</span><span class="choice-text">Add a <code>CLAUDE.md</code> instruction: "Do not ask questions for trivial edits — just make them."</span></li>
+      <li class="choice" data-idx="1"><span class="choice-label">B</span><span class="choice-text">Switch the junior engineer to Haiku so planning turns are faster.</span></li>
+      <li class="choice" data-idx="2"><span class="choice-label">C</span><span class="choice-text">Turn off plan mode for trivial edits — plan mode is calibrated to multi-step, architecturally meaningful changes; for one-line edits, direct execution is the right default.</span></li>
+      <li class="choice" data-idx="3"><span class="choice-label">D</span><span class="choice-text">Run with <code>--dangerously-skip-permissions</code> so Claude does not pause to confirm.</span></li>
+    </ul>
+    <div class="explanation"><div class="explanation-title">Explanation</div><p>Plan mode is a flow-control feature meant for changes where getting the <em>plan</em> wrong has real cost — multi-file edits, architectural decisions, refactors that interact with other systems. For a typo or single-line rename, the planning overhead exceeds the value of the plan; direct execution is the right default. Option A tries to fix the symptom inside the wrong mode — plan mode's contract is to produce and confirm a plan, so it will continue to surface clarifying questions. Option B mistakes latency for the problem; the goal is not faster planning, it is no planning for trivial work. Option D disables a different safety layer entirely (permission prompts), trading too much safety for ergonomics on the wrong axis.</p></div>
+  </div>
+  <div class="summary" id="summary">
+    <h2>Quiz complete!</h2>
+    <div class="score" id="finalScore"></div>
+    <p id="scoreMessage"></p>
+    <button class="reset-btn" id="resetBtn" type="button">Try again</button>
+  </div>
+</div>
+<script>
+(function () {
+  const cards = document.querySelectorAll('.question-card');
+  const total = cards.length;
+  let answered = 0;
+  let correct = 0;
+
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+  const summary = document.getElementById('summary');
+  const finalScore = document.getElementById('finalScore');
+  const scoreMessage = document.getElementById('scoreMessage');
+
+  function updateProgress() {
+    const pct = (answered / total) * 100;
+    progressFill.style.width = pct + '%';
+    progressText.textContent = 'Answered ' + answered + ' of ' + total + ' \u00b7 Correct: ' + correct;
+    if (answered === total) showSummary();
+  }
+
+  function showSummary() {
+    summary.classList.add('show');
+    const pct = Math.round((correct / total) * 100);
+    finalScore.textContent = correct + ' / ' + total + ' (' + pct + '%)';
+    let msg;
+    if (pct === 100) msg = "Perfect score! You're ready for the exam.";
+    else if (pct >= 85) msg = "Excellent \u2014 strong grasp of the material.";
+    else if (pct >= 70) msg = "Good work. Review the missed questions and try again.";
+    else if (pct >= 50) msg = "Decent start \u2014 revisit the explanations and retry.";
+    else msg = "Worth another pass through the explanations before retrying.";
+    scoreMessage.textContent = msg;
+    summary.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function resetQuiz() {
+    answered = 0;
+    correct = 0;
+    summary.classList.remove('show');
+    cards.forEach(function (card) {
+      card.classList.remove('answered');
+      card.querySelectorAll('.choice').forEach(function (c) {
+        c.classList.remove('correct', 'incorrect');
+      });
+    });
+    updateProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  cards.forEach(function (card) {
+    const correctIdx = parseInt(card.getAttribute('data-correct'), 10);
+    const choices = card.querySelectorAll('.choice');
+    choices.forEach(function (choice) {
+      choice.addEventListener('click', function () {
+        if (card.classList.contains('answered')) return;
+        const idx = parseInt(choice.getAttribute('data-idx'), 10);
+        card.classList.add('answered');
+        if (idx === correctIdx) {
+          choice.classList.add('correct');
+          correct++;
+        } else {
+          choice.classList.add('incorrect');
+          choices[correctIdx].classList.add('correct');
+        }
+        answered++;
+        updateProgress();
+      });
+    });
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', resetQuiz);
+})();
+</script>
+</body>
+</html>

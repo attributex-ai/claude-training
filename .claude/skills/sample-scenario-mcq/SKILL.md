@@ -62,9 +62,11 @@ These rules exist because earlier generations of this set were graded against th
 
 A good distractor is something a candidate with **incomplete** knowledge would actually pick. The exam guide's distractors include things like "implement a routing classifier" or "deploy a separate ML model" — wrong, but the kind of wrong that comes from over-engineering, not from absurdity. Reject distractors that are obviously wrong on first read.
 
-**Avoid:** "Crash the agent session so the failure is visible", "Lower the model temperature so it follows the prompt", "Remove `process_refund` and have a human do all refunds".
+**Avoid:** "Crash the agent session so the failure is visible", "Lower the model temperature so it follows the prompt", "Remove `process_refund` and have a human do all refunds", "Simulate the action by writing it to the scratchpad and claim success", "Fabricate a confirmation that the work was done", "Run the workflow on a more powerful machine", "Tighten the regex on completion phrases", "Refuse to engage with the request entirely".
 
-**Prefer:** "Retry internally with exponential backoff and return only the final outcome", "Add 5–8 few-shot examples showing correct ordering", "Consolidate both tools into one that dispatches internally".
+**Prefer:** "Retry internally with exponential backoff and return only the final outcome", "Add 5–8 few-shot examples showing correct ordering", "Consolidate both tools into one that dispatches internally", "Have a second Claude call review and remove uncited claims" (probabilistic judge — sophisticated but no guarantee), "Implement a routing classifier that pre-selects tools" (over-engineered first step).
+
+**The four-option sanity check:** if you can identify the correct answer by elimination after reading only two options, the question is testing recognition, not judgment. Three of four options must be defensible enough that a candidate with incomplete knowledge could pick them on principle.
 
 ### 2. Pair the correct answer against the *next-best* alternative, not a weak one
 
@@ -82,6 +84,8 @@ If a question is testing API trivia (e.g., what `tool_choice: "any"` does), embe
 
 Official exam-guide explanations end after rebutting the distractors. They don't tack on "Note: of course, X is also reasonable in some cases…" — that kind of hedge undermines the answer. If a caveat is genuinely needed (e.g., "compiling a handoff summary is still appropriate"), fold it into the main explanation, don't append it.
 
+Also: **group distractors by category of mistake** rather than walking A→B→C→D mechanically. The exam guide writes "Options B and C rely on probabilistic LLM compliance, which is insufficient when errors have financial consequences. Option D addresses tool availability rather than tool ordering." — one sentence per shared failure mode, not one sentence per letter. Lockstep "A is wrong because…, B is wrong because…, C is wrong because…, D is wrong because…" reads mechanical and dilutes the principle being taught.
+
 ### 6. Distribute correct answers evenly across A / B / C / D
 
 Candidates pattern-match on positional bias. For N questions, the correct letter must be uniformly distributed:
@@ -96,6 +100,28 @@ Plan the assignment **before** drafting the questions (you can write the questio
 ### 7. Stem realism — anchor every stem in concrete numbers or signals
 
 Every stem should contain at least one of: a percentage ("12% of cases"), a count ("40+ fields per response"), a dollar amount ("refunds above $500"), a file path, a tool name, a log excerpt, or a specific failure mode. Vague stems ("sometimes the agent misbehaves") produce vague distractors.
+
+**Stronger stems layer two or three of these signals.** The exam guide's hardest questions stack a *primary metric* + a *secondary split or evidence* + a *concrete failure mode*: e.g., "This adds 2–3 round trips per task and increases latency by 40%. Your evaluation shows that 85% of these verifications are simple fact-checks (dates, names, statistics) while 15% require deeper investigation." That stacked structure (latency impact + frequency split + failure mode) is what unlocks proportionality reasoning in the answer choices. Single-number stems work; two-number stems are stronger; layered stems are exam-guide-grade.
+
+## Question type mix
+
+Domain coverage tells you *what* the question is about; question type tells you *what cognitive task* it asks. Clustering on one type ("what is the right fix?") makes the set easier than the real exam. For a 20-question set, include at least:
+
+### Root-cause diagnostic (≥ 2 per set) — signature exam-guide pattern
+
+The stem presents *symptoms* + *evidence from logs* and the four options are candidate root causes that each blame a different component. Only one fits the evidence. Example: "The final reports cover only visual arts, missing music, writing, and film production. When you examine the coordinator's logs, you see it decomposed the topic into three subtasks: 'AI in digital art creation,' 'AI in graphic design,' and 'AI in photography.' What is the most likely root cause?" — the answer blames coordinator decomposition; distractors wrongly blame the search, synthesis, or analysis agents. For multi-agent scenarios this is *the* signature pattern; for single-agent scenarios it tests isolating which layer of the system is at fault.
+
+### Proportionate first step (≥ 1 per set)
+
+The stem asks for "the most effective *first step*". The correct answer is low-effort, high-leverage. The next-best distractor is a *valid architectural fix* that is disproportionate to a first step (e.g., "consolidate tools into `lookup_entity`" when the immediate problem is inadequate descriptions). The explanation must name *why* the heavier fix is wrong as a first step, not wrong in absolute terms.
+
+### Tradeoff evaluation (≥ 1 per set)
+
+The stem presents a real engineering tradeoff with quantified terms (e.g., "50% cost savings" vs "24-hour processing window"). The correct answer routes different cases to different mechanisms based on their characteristics; distractors apply one mechanism uniformly.
+
+### Correct-fix (the bulk)
+
+The remaining questions follow the standard "what is the right fix?" pattern already documented in the rubric.
 
 ## Domain coverage
 
@@ -158,3 +184,7 @@ Example: "Wrote `multi_agent_research_sample_questions.md` — 20 questions for 
 - Drifting outside the chosen scenario's tools or terminology (e.g., referencing `lookup_order` in the Multi-Agent Research scenario).
 - Restating the question's premise in the explanation instead of explaining the underlying principle.
 - Skipping the `AskUserQuestion` step and assuming defaults — the choice of scenario and count must be the user's.
+- A set where every question is "what is the right fix?" and none diagnose a root cause from logs.
+- Three-of-four obviously-wrong options ("hallucinate a confirmation", "crash the process", "refuse to engage") leaving only one defensible choice — that tests recognition, not judgment.
+- Mechanical letter-by-letter rebuttal in the explanation instead of grouping by shared failure mode.
+- Single-quantifier stems on questions that warrant layered signals (especially proportionality and tradeoff questions).
